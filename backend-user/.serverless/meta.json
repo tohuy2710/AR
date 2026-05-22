@@ -1,0 +1,102 @@
+{
+  "/Volumes/SSD-WDBlue/tohuy/y3s2/ar/ar-web/backend-user/serverless.yml": {
+    "versionFramework": "4.36.1",
+    "servicePath": "/Volumes/SSD-WDBlue/tohuy/y3s2/ar/ar-web/backend-user/serverless.yml",
+    "serviceConfigFileName": "serverless.yml",
+    "service": {
+      "service": "my-serverless-backend",
+      "provider": {
+        "name": "aws",
+        "runtime": "nodejs20.x",
+        "stage": "dev",
+        "region": "us-east-1",
+        "environment": {
+          "DB_HOST": "${env:DB_HOST}",
+          "DB_PORT": "${env:DB_PORT}",
+          "DB_USER": "${env:DB_USER}",
+          "DB_PASSWORD": "<REDACTED>",
+          "DB_NAME": "${env:DB_NAME}"
+        }
+      },
+      "plugins": [
+        "serverless-offline"
+      ],
+      "functions": {
+        "hello": {
+          "handler": "src/handlers/hello.handler",
+          "events": [
+            {
+              "http": {
+                "path": "hello",
+                "method": "get"
+              }
+            }
+          ]
+        },
+        "createUser": {
+          "handler": "src/handlers/user.create",
+          "events": [
+            {
+              "http": {
+                "path": "users",
+                "method": "post"
+              }
+            }
+          ]
+        },
+        "getUsers": {
+          "handler": "src/handlers/user.getAll",
+          "events": [
+            {
+              "http": {
+                "path": "users",
+                "method": "get"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "provider": {
+      "name": "aws",
+      "runtime": "nodejs20.x",
+      "stage": "dev",
+      "region": "us-east-1",
+      "environment": {
+        "DB_HOST": "${env:DB_HOST}",
+        "DB_PORT": "${env:DB_PORT}",
+        "DB_USER": "${env:DB_USER}",
+        "DB_PASSWORD": "<REDACTED>",
+        "DB_NAME": "${env:DB_NAME}"
+      }
+    },
+    "dashboard": {
+      "isEnabledForService": false,
+      "requiredAuthentication": false,
+      "orgFeaturesInUse": null,
+      "orgObservabilityIntegrations": null,
+      "serviceAppId": null,
+      "serviceProvider": null,
+      "instanceParameters": null
+    },
+    "error": {
+      "message": "Cannot resolve '${env:DB_HOST}' variable at 'provider.environment.DB_HOST'. No value is available for this variable, and no default value was provided. Please check your variable definitions or provide a default value.",
+      "stack": "Error: Cannot resolve '${env:DB_HOST}' variable at 'provider.environment.DB_HOST'. No value is available for this variable, and no default value was provided. Please check your variable definitions or provide a default value.\n    at _ResolverManager.resolve (file:///Users/tohuy2710/.serverless/releases/4.36.1/package/dist/sf-core.js:977:32372)\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)\n    at async #handlePlaceholderNode (file:///Users/tohuy2710/.serverless/releases/4.36.1/package/dist/sf-core.js:977:30550)\n    at async file:///Users/tohuy2710/.serverless/releases/4.36.1/package/dist/sf-core.js:977:28394\n    at async processNodeAndHandleCompletion (file:///Users/tohuy2710/.serverless/releases/4.36.1/package/dist/sf-core.js:977:16781)",
+      "code": "MISSING_VARIABLE_RESULT"
+    },
+    "serviceRawFile": "service: my-serverless-backend\n\nprovider:\n  name: aws\n  runtime: nodejs20.x\n  stage: dev\n  region: us-east-1\n  \n  # Khai báo biến môi trường cho tất cả các hàm Lambda tại đây\n  environment:\n    DB_HOST: ${env:DB_HOST}\n    DB_PORT: ${env:DB_PORT}\n    DB_USER: ${env:DB_USER}\n    DB_PASSWORD: ${env:DB_PASSWORD}\n    DB_NAME: ${env:DB_NAME}\n\nplugins:\n  - serverless-offline\n\nfunctions:\n  hello:\n    handler: src/handlers/hello.handler\n    events:\n      - http:\n          path: hello\n          method: get\n\n  createUser:\n    handler: src/handlers/user.create\n    events:\n      - http:\n          path: users\n          method: post\n\n  getUsers:\n    handler: src/handlers/user.getAll\n    events:\n      - http:\n          path: users\n          method: get",
+    "command": [
+      "offline"
+    ],
+    "options": {},
+    "orgId": "f29d9a5d-1861-4b9f-8021-57074b61efd4",
+    "orgName": "hnvstories",
+    "userId": "WlvvXK8GzVVv046rp4",
+    "userName": "hnvstories",
+    "serviceProviderAwsCfStackId": null,
+    "serviceProviderAwsCfStackCreated": null,
+    "serviceProviderAwsCfStackUpdated": null,
+    "serviceProviderAwsCfStackStatus": null,
+    "serviceProviderAwsCfStackOutputs": null
+  }
+}
