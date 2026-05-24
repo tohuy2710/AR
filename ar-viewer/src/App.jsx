@@ -3,45 +3,267 @@ import * as THREE from "three";
 import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
+const API_BASE_URL = "https://d2a0-2405-4803-f159-f3d0-cd90-5c1b-1ed9-956.ngrok-free.app";
+
 export default function App() {
   const mountRef = useRef(null);
   const overlayRef = useRef(null);
+  
+  // Cờ trạng thái ghi âm
+  const isRecordingRef = useRef(false);
+  const audioChunksRef = useRef([]);
 
-  // Các cờ trạng thái hệ thống
+  // Các cờ hệ thống AR
   const greetingDoneRef = useRef(false);
   const planeFoundPlayedRef = useRef(false);
   const hasPlacedObjectRef = useRef(false);
   const loopTimeoutRef = useRef(null);
   const hasPlayedDoiViTriRef = useRef(false);
-  
-  // Các cờ cho tính năng voice xoay
   const rotateKichHoatTimeoutRef = useRef(null);
   const isVoicePlayingRef = useRef(false);
   const hasPlayedRotateSuccessRef = useRef(false);
 
+  // Đếm số lần chạm để kích hoạt trợ lý (5 lần ở góc phải dưới)
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef(null);
+  const isCountingTapRef = useRef(false);
+
+  // Cờ để đảm bảo voice cố định chỉ phát 1 lần
+  const hasPlayedXinChaoRef = useRef(false);
+  const hasPlayedNhanDienRef = useRef(false);
+  const hasPlayedVongTronXanhRef = useRef(false);
+  const hasPlayedDoiViTriVoiceRef = useRef(false);
+  const hasPlayedXoayKichHoatRef = useRef(false);
+  const hasPlayedXoayThanhCongRef = useRef(false);
+
+  // Tham chiếu đến speech synthesis
+  const speechSynthesisRef = useRef(window.speechSynthesis);
+  const currentUtteranceRef = useRef(null);
+
   useEffect(() => {
+    const mountNode = mountRef.current;
     let scene, camera, renderer;
-    let controller;
-    let reticle;
-    let hitTestSource = null;
-    let hitTestSourceRequested = false;
-
+    let controller, reticle, hitTestSource = null, hitTestSourceRequested = false;
     let placedModels = [];
-    let textSprite = null; // Quản lý đối tượng Text 3D HUD
+    let textSprite = null;
 
-    const audioXinChao = new Audio("/voice/xin_chao.mp3");
-    const audioNhanDien = new Audio("/voice/nhan_dien_thanh_cong.mp3");
-    const audioVongTronXanh = new Audio("/voice/vong_tron_xanh.mp3");
-    const audioDoiViTri = new Audio("/voice/doi_vi_tri.mp3");
-    const audioXoayKichHoat = new Audio("/voice/xoay_kich_hoat.mp3");
-    const audioXoayThanhCong = new Audio("/voice/xoay_thanh_cong.mp3");
+    // ================== HÀM TẠO GIỌNG NÓI TRÊN FE ==================
+    function speakText(text, onEnd = null) {
+      return new Promise((resolve, reject) => {
+        // Dừng phát hiện tại nếu có
+        if (currentUtteranceRef.current) {
+          speechSynthesisRef.current.cancel();
+        }
+        
+        // Tạo utterance mới
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'vi-VN';
+        utterance.rate = 1.2;    // Tốc độ nói
+        utterance.pitch = 1.0;    // Cao độ
+        utterance.volume = 1.0;   // Âm lượng
+        
+        // Chọn giọng nói tiếng Việt
+        const setVoice = () => {
+          const voices = speechSynthesisRef.current.getVoices();
+          
+          const vietnameseVoice = voices.find(voice => 
+            voice.lang.includes('vi') 
+          );
+          if (vietnameseVoice) {
+            utterance.voice = vietnameseVoice;
+          } 
+        };
+        
+        // Event listeners
+        utterance.onstart = () => {
+          console.log("Speaking:", text);
+          isVoicePlayingRef.current = true;
+          updateInstructionText("🔊 " + text);
+        };
+        
+        utterance.onend = () => {
+          console.log("Speech ended");
+          isVoicePlayingRef.current = false;
+          currentUtteranceRef.current = null;
+          updateInstructionText("");
+          if (onEnd) onEnd();
+          resolve(true);
+        };
+        
+        utterance.onerror = (event) => {
+          console.error("Speech error:", event);
+          isVoicePlayingRef.current = false;
+          currentUtteranceRef.current = null;
+          reject(event);
+        };
+        
+        // Chờ voices loaded
+        if (speechSynthesisRef.current.getVoices().length === 0) {
+          speechSynthesisRef.current.addEventListener('voiceschanged', setVoice, { once: true });
+        } else {
+          setVoice();
+        }
+        
+        currentUtteranceRef.current = utterance;
+        speechSynthesisRef.current.speak(utterance);
+      });
+    }
 
-    // Hàm tự động xuống dòng khi text quá dài trên Canvas
+    function stopSpeaking() {
+      if (speechSynthesisRef.current) {
+        speechSynthesisRef.current.cancel();
+      }
+      if (currentUtteranceRef.current) {
+        currentUtteranceRef.current = null;
+      }
+      isVoicePlayingRef.current = false;
+      updateInstructionText("");
+    }
+
+    // Hàm phát voice với kiểm tra idle
+    const playVoiceIfIdle = async (text, voiceFlagRef) => {
+      if (voiceFlagRef.current) return;
+      if (isVoicePlayingRef.current) {
+        // Đợi 1 chút rồi thử lại
+        setTimeout(() => playVoiceIfIdle(text, voiceFlagRef), 500);
+        return;
+      }
+      
+      voiceFlagRef.current = true;
+      await speakText(text);
+    };
+
+    // ================== TRỢ LÝ GIỌNG NÓI ==================
+    async function startRecordingVoice() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        audioChunksRef.current = [];
+        
+        mediaRecorder.start();
+        updateInstructionText("🎙️ Đang thu âm... (Hãy nói yêu cầu của bạn)");
+
+        mediaRecorder.ondataavailable = e => {
+          if (e.data.size > 0) {
+            audioChunksRef.current.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = async () => {
+          if (audioChunksRef.current.length === 0) {
+            console.warn("No audio data recorded");
+            isRecordingRef.current = false;
+            updateInstructionText("");
+            return;
+          }
+          
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          stream.getTracks().forEach(track => track.stop());
+          await sendVoiceToBackend(audioBlob);
+        };
+
+        // Tự động dừng sau 5 giây
+        setTimeout(() => {
+          if (mediaRecorder.state === "recording") {
+            mediaRecorder.stop();
+            updateInstructionText("⏳ Đang xử lý yêu cầu...");
+          }
+        }, 5000);
+      } catch (err) {
+        console.error("Lỗi cấp quyền mic:", err);
+        isRecordingRef.current = false;
+        updateInstructionText("❌ Không thể truy cập microphone");
+        setTimeout(() => updateInstructionText(""), 2000);
+        await speakText("Không thể truy cập microphone, vui lòng kiểm tra quyền truy cập");
+      }
+    }
+
+    async function sendVoiceToBackend(audioBlob) {
+      const formData = new FormData();
+      formData.append("file", audioBlob, "voice.webm");
+
+      try {
+        console.log("Sending voice to backend...");
+        const response = await fetch(`${API_BASE_URL}/api/voice-chat`, {
+          method: "POST",
+          body: formData
+        });
+        
+        const data = await response.json();
+        console.log("Backend response:", data);
+        
+        // Xử lý intent order / command / QA
+        if (data.intent === "order") {
+          // Phát giọng nói từ text response
+          if (data.tro_ly_tra_loi) {
+            await speakText(data.tro_ly_tra_loi);
+          } else {
+            await speakText("Đã chốt đơn thành công: " + data.order_summary);
+          }
+          
+        } else if (data.intent === "command") {
+          // Phát giọng nói trước khi thực hiện command
+          if (data.tro_ly_tra_loi) {
+            await speakText(data.tro_ly_tra_loi);
+          }
+          
+          // Thực hiện command
+          if (data.action === "rotate") {
+            placedModels.forEach(m => m.userData.isRotating = true);
+          } else if (data.action === "stop") {
+            placedModels.forEach(m => m.userData.isRotating = false);
+          } else if (data.action === "delete") {
+            placedModels.forEach(m => scene.remove(m));
+            placedModels.splice(0, placedModels.length);
+            if (rotateKichHoatTimeoutRef.current) clearTimeout(rotateKichHoatTimeoutRef.current);
+          }
+          
+        } else if (data.intent === "qa") {
+          // Phát câu trả lời bằng giọng nói
+          if (data.tro_ly_tra_loi) {
+            await speakText(data.tro_ly_tra_loi);
+          } else {
+            await speakText("Xin lỗi, tôi chưa hiểu câu hỏi của bạn.");
+          }
+        }
+        
+        // Reset trạng thái recording
+        isRecordingRef.current = false;
+        
+      } catch (err) {
+        console.error("Lỗi giao tiếp backend:", err);
+        isRecordingRef.current = false;
+        updateInstructionText("❌ Lỗi kết nối server");
+        setTimeout(() => updateInstructionText(""), 3000);
+        await speakText("Xin lỗi, có lỗi kết nối server. Vui lòng thử lại sau.");
+      }
+    }
+
+    function activateVoiceAssistant() {
+      if (isRecordingRef.current) return;
+      if (isVoicePlayingRef.current) {
+        stopSpeaking();
+        setTimeout(() => activateVoiceAssistant(), 500);
+        return;
+      }
+      
+      isRecordingRef.current = true;
+      updateInstructionText("🎤 Frog đang lắng nghe...");
+      
+      // Phát "Tôi đang lắng nghe" bằng Web Speech
+      speakText("Tôi đang lắng nghe", () => {
+        startRecordingVoice();
+      }).catch(() => {
+        startRecordingVoice();
+      });
+    }
+    // =====================================================
+
+    // ================== CÁC HÀM UI (text sprite) ==================
     function wrapText(context, text, maxWidth) {
       const words = text.split(" ");
       const lines = [];
       let currentLine = words[0];
-
       for (let i = 1; i < words.length; i++) {
         let word = words[i];
         let width = context.measureText(currentLine + " " + word).width;
@@ -56,51 +278,31 @@ export default function App() {
       return lines;
     }
 
-    // Hàm khởi tạo/cập nhật Text 3D chất lượng cao bám theo góc nhìn Camera
-    // Modified: removed background color, text positioned higher on screen
     function updateInstructionText(text) {
       if (!text) {
         if (textSprite) textSprite.visible = false;
         return;
       }
-
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d");
-      
-      // Khởi tạo kích thước canvas lớn để chữ sắc nét, không bị vỡ hạt (pixelated)
       canvas.width = 1024;
       canvas.height = 512;
-
       const padding = 40;
       const maxWidth = canvas.width - padding * 2;
       const lineHeight = 55;
       
       context.font = "bold 42px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-      
-      // Tính toán số dòng thực tế để co giãn chiều cao Box Background tự động
       const lines = wrapText(context, text, maxWidth);
       const boxHeight = lines.length * lineHeight + padding * 2;
-      const boxWidth = canvas.width - padding * 2;
-      
-      // Tọa độ vẽ Box căn giữa canvas (vẫn giữ để tính toán vị trí text)
-      const boxX = padding;
       const boxY = (canvas.height - boxHeight) / 2;
       
-      // 1. BACKGROUND REMOVED: Không vẽ khung nền màu đen. Chỉ giữ lại nền trong suốt.
-      // context.fillStyle = "rgba(0, 0, 0, 0.75)"; // Đã xóa theo yêu cầu
-      
-      // 2. Cấu hình Hiệu ứng Đổ bóng chữ (Subtle Text Shadow) nhằm tăng cực đại độ tương phản
       context.shadowColor = "rgba(0, 0, 0, 0.6)";
       context.shadowBlur = 6;
       context.shadowOffsetX = 3;
       context.shadowOffsetY = 3;
-
-      // 3. Vẽ Text đa dòng (Pure White, Center Align)
       context.fillStyle = "#FFFFFF";
       context.textAlign = "center";
       context.textBaseline = "top";
-
-      // Xóa canvas trước khi vẽ để đảm bảo nền trong suốt
       context.clearRect(0, 0, canvas.width, canvas.height);
       
       lines.forEach((line, index) => {
@@ -112,79 +314,33 @@ export default function App() {
       texture.minFilter = THREE.LinearFilter;
 
       if (!textSprite) {
-        // Sử dụng depthTest/depthWrite = false để text luôn đè lên vật thể 3D trong không gian
         const material = new THREE.SpriteMaterial({ 
-          map: texture, 
-          depthTest: false, 
-          depthWrite: false,
-          transparent: true,
-          opacity: 0 // Khởi tạo bằng 0 để chạy hiệu ứng Fade-in
+          map: texture, depthTest: false, depthWrite: false, transparent: true, opacity: 0 
         });
         textSprite = new THREE.Sprite(material);
-        
-        // Vị trí: x=0 (Căn giữa ngang), y được tăng lên 0.6 để đưa text lên cao hơn trên màn hình, z=-1 (Cách mắt 1 mét)
-        textSprite.position.set(0, 0.6, -1); 
+        textSprite.position.set(0, 0.6, -1);
         textSprite.scale.set(0.8, 0.4, 1);
-        textSprite.renderOrder = 99999; // Đảm bảo lớp hiển thị cao nhất vượt trên tất cả layer khác
-        
+        textSprite.renderOrder = 99999;
         if (camera) camera.add(textSprite);
       } else {
         if (textSprite.material.map) textSprite.material.map.dispose();
         textSprite.material.map = texture;
-        textSprite.material.opacity = 0; // Reset opacity về 0 để kích hoạt lại fade-in khi đổi text
+        textSprite.material.opacity = 0;
         textSprite.visible = true;
-        // Cập nhật vị trí lên cao hơn nếu textSprite đã tồn tại
         textSprite.position.set(0, 0.6, -1);
       }
     }
 
-    audioXinChao.addEventListener("ended", () => {
-      greetingDoneRef.current = true;
-      updateInstructionText(""); 
-    });
-
-    audioNhanDien.addEventListener("ended", () => {
-      if (!hasPlacedObjectRef.current) {
-        updateInstructionText("Chạm vào vòng tròn xanh để đặt vật phẩm");
-        audioVongTronXanh.play().catch((e) => console.warn(e));
-      }
-    });
-
-    audioVongTronXanh.addEventListener("ended", () => {
-      updateInstructionText(""); 
-      if (!hasPlacedObjectRef.current) {
-        loopTimeoutRef.current = setTimeout(() => {
-          if (!hasPlacedObjectRef.current) {
-            updateInstructionText("Chạm vào vòng tròn xanh để đặt vật phẩm");
-            audioVongTronXanh.play().catch((e) => console.warn(e));
-          }
-        }, 30000);
-      }
-    });
-
-    const playVoiceIfIdle = (audio, text = "") => {
-      if (!isVoicePlayingRef.current) {
-        isVoicePlayingRef.current = true;
-        if (text) updateInstructionText(text);
-        
-        audio.play().catch((e) => console.warn(e));
-        audio.addEventListener("ended", () => {
-          isVoicePlayingRef.current = false;
-          updateInstructionText(""); 
-        }, { once: true });
-      }
-    };
-
     const scheduleRotateKichHoat = () => {
       if (rotateKichHoatTimeoutRef.current) clearTimeout(rotateKichHoatTimeoutRef.current);
-
       rotateKichHoatTimeoutRef.current = setTimeout(() => {
         if (hasPlacedObjectRef.current && !isVoicePlayingRef.current) {
-          playVoiceIfIdle(audioXoayKichHoat, "Chạm 2 lần vào sản phẩm để xoay");
+          playVoiceIfIdle("Chạm hai lần vào sản phẩm để xoay", hasPlayedXoayKichHoatRef);
         }
       }, 10000);
     };
 
+    // ================== TƯƠNG TÁC AR ==================
     let isDragging = false;
     let currentTouchedObject = null;
     let previousPinchDistance = 0;
@@ -201,63 +357,102 @@ export default function App() {
       return [];
     }
 
-    init();
-    animate();
+    // ================== LẮNG NGHE CHẠM 5 LẦN Ở GÓC PHẢI DƯỚI ==================
+    function isInBottomRightCorner(x, y) {
+      const cornerSize = 150;
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      return (x > windowWidth - cornerSize && y > windowHeight - cornerSize);
+    }
+
+    function setupTapToActivate() {
+      const handleTap = (e) => {
+        const touch = e.touches[0];
+        if (!touch) return;
+        
+        const { clientX, clientY } = touch;
+        
+        if (!isInBottomRightCorner(clientX, clientY)) return;
+        if (isRecordingRef.current) return;
+        
+        isCountingTapRef.current = true;
+        
+        if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+        tapCountRef.current += 1;
+        
+        if (tapCountRef.current === 1) {
+          updateInstructionText("👆 Chạm thêm 4 lần vào góc phải dưới để gọi Frog...");
+          setTimeout(() => {
+            if (tapCountRef.current < 5) updateInstructionText("");
+          }, 1000);
+        } else if (tapCountRef.current > 1 && tapCountRef.current < 5) {
+          updateInstructionText(`👆 Còn ${5 - tapCountRef.current} lần chạm nữa...`);
+          setTimeout(() => {
+            if (tapCountRef.current < 5) updateInstructionText("");
+          }, 800);
+        }
+        
+        tapTimerRef.current = setTimeout(() => {
+          tapCountRef.current = 0;
+          isCountingTapRef.current = false;
+          updateInstructionText("");
+        }, 500);
+        
+        if (tapCountRef.current === 5) {
+          tapCountRef.current = 0;
+          isCountingTapRef.current = false;
+          if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+          updateInstructionText("");
+          activateVoiceAssistant();
+        }
+      };
+      
+      window.addEventListener('touchstart', handleTap);
+      return () => window.removeEventListener('touchstart', handleTap);
+    }
+    // =====================================================
 
     function init() {
       scene = new THREE.Scene();
-
-      camera = new THREE.PerspectiveCamera(
-        70,
-        window.innerWidth / window.innerHeight,
-        0.01,
-        20
-      );
-      
-      // Bắt buộc add camera vào scene để các object con (như textSprite HUD) hiển thị theo tầm nhìn
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
       scene.add(camera);
 
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.xr.enabled = true;
+      if (mountNode) mountNode.appendChild(renderer.domElement);
 
-      mountRef.current.appendChild(renderer.domElement);
-
-      renderer.xr.addEventListener("sessionstart", () => {
+      renderer.xr.addEventListener("sessionstart", async () => {
         greetingDoneRef.current = false;
         planeFoundPlayedRef.current = false;
         hasPlacedObjectRef.current = false;
         hasPlayedDoiViTriRef.current = false;
-        hasPlayedRotateSuccessRef.current = false; 
+        hasPlayedRotateSuccessRef.current = false;
         placedModels = [];
         
         if (rotateKichHoatTimeoutRef.current) clearTimeout(rotateKichHoatTimeoutRef.current);
         isVoicePlayingRef.current = false;
         
-        updateInstructionText("Vui lòng di chuyển camera xung quanh để ứng dụng nhận diện mặt phẳng");
-        audioXinChao.play().catch((e) => console.warn(e));
+        updateInstructionText("📱 Vui lòng di chuyển camera xung quanh để nhận diện mặt phẳng");
+        
+        if (!hasPlayedXinChaoRef.current) {
+          hasPlayedXinChaoRef.current = true;
+          await speakText("Xin chào, tôi là trợ lý ảo. Hãy di chuyển camera để tôi thấy mặt phẳng.");
+          greetingDoneRef.current = true;
+        }
       });
 
       renderer.xr.addEventListener("sessionend", () => {
-        audioXinChao.pause(); audioXinChao.currentTime = 0;
-        audioNhanDien.pause(); audioNhanDien.currentTime = 0;
-        audioVongTronXanh.pause(); audioVongTronXanh.currentTime = 0;
-        audioDoiViTri.pause(); audioDoiViTri.currentTime = 0;
-        audioXoayKichHoat.pause(); audioXoayKichHoat.currentTime = 0;
-        audioXoayThanhCong.pause(); audioXoayThanhCong.currentTime = 0;
-        
-        updateInstructionText(""); 
-
+        updateInstructionText("");
         if (loopTimeoutRef.current) clearTimeout(loopTimeoutRef.current);
         if (rotateKichHoatTimeoutRef.current) clearTimeout(rotateKichHoatTimeoutRef.current);
       });
 
       const arButton = ARButton.createButton(renderer, {
         requiredFeatures: ["hit-test"],
-        optionalFeatures: ["dom-overlay"], 
+        optionalFeatures: ["dom-overlay"],
         domOverlay: { root: overlayRef.current },
       });
-
       arButton.style.zIndex = "10000";
       document.body.appendChild(arButton);
 
@@ -266,7 +461,6 @@ export default function App() {
 
       const geometry = new THREE.RingGeometry(0.1, 0.12, 32).rotateX(-Math.PI / 2);
       const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-
       reticle = new THREE.Mesh(geometry, material);
       reticle.matrixAutoUpdate = false;
       reticle.visible = false;
@@ -302,7 +496,6 @@ export default function App() {
 
         overlayEl.addEventListener("touchmove", (e) => {
           if (!currentTouchedObject) return;
-
           if (e.touches.length === 2) {
             isDragging = true;
             const dx = e.touches[0].clientX - e.touches[1].clientX;
@@ -330,8 +523,8 @@ export default function App() {
         });
       }
 
-      function onSelect(event) {
-        if (isDragging) return;
+      async function onSelect(event) {
+        if (isDragging || isCountingTapRef.current) return;
 
         const controller = event.target;
         const raycaster = new THREE.Raycaster();
@@ -364,22 +557,18 @@ export default function App() {
             if (rootModel.userData.tapCount === 2) {
               const wasRotating = rootModel.userData.isRotating;
               rootModel.userData.isRotating = !wasRotating;
-              
               if (!wasRotating && rootModel.userData.isRotating && !hasPlayedRotateSuccessRef.current) {
                 hasPlayedRotateSuccessRef.current = true;
-                playVoiceIfIdle(audioXoayThanhCong, "Chạm 2 lần để dừng xoay");
+                await playVoiceIfIdle("Sản phẩm đang xoay, chạm hai lần để dừng", hasPlayedXoayThanhCongRef);
               }
-            } 
-            else if (rootModel.userData.tapCount === 3) {
+            } else if (rootModel.userData.tapCount === 3) {
               scene.remove(rootModel);
               placedModels = placedModels.filter((m) => m !== rootModel);
-              
               if (placedModels.length === 0) {
                 hasPlayedRotateSuccessRef.current = false;
-                if (rotateKichHoatTimeoutRef.current) {
-                  clearTimeout(rotateKichHoatTimeoutRef.current);
-                }
+                if (rotateKichHoatTimeoutRef.current) clearTimeout(rotateKichHoatTimeoutRef.current);
               }
+              await speakText("Đã xóa sản phẩm");
             }
             return;
           }
@@ -388,9 +577,7 @@ export default function App() {
         if (!reticle.visible) return;
 
         hasPlacedObjectRef.current = true;
-        audioVongTronXanh.pause();
-        audioVongTronXanh.currentTime = 0;
-        updateInstructionText(""); 
+        updateInstructionText("");
 
         if (loopTimeoutRef.current) clearTimeout(loopTimeoutRef.current);
 
@@ -403,11 +590,7 @@ export default function App() {
           position.setFromMatrixPosition(reticle.matrix);
           model.position.copy(position);
           
-          model.userData = { 
-            tapCount: 0, 
-            lastTapTime: 0, 
-            isRotating: false 
-          };
+          model.userData = { tapCount: 0, lastTapTime: 0, isRotating: false };
 
           scene.add(model);
           placedModels.push(model);
@@ -416,7 +599,7 @@ export default function App() {
 
           if (placedModels.length >= 2 && !hasPlayedDoiViTriRef.current) {
             hasPlayedDoiViTriRef.current = true;
-            playVoiceIfIdle(audioDoiViTri, "Chạm 3 lần vào vật phẩm để xoá");
+            playVoiceIfIdle("Chạm ba lần vào sản phẩm để xóa", hasPlayedDoiViTriVoiceRef);
           }
         });
       }
@@ -427,19 +610,16 @@ export default function App() {
     }
 
     function render(_, frame) {
-      // 1. Xử lý xoay model tự động
       placedModels.forEach((model) => {
         if (model.userData && model.userData.isRotating) {
           model.rotation.y += 0.03;
         }
       });
 
-      // 2. Hiệu ứng Smooth Fade-in cho Text Overlay bằng cách tịnh tiến opacity qua từng frame
       if (textSprite && textSprite.visible && textSprite.material.opacity < 1) {
-        textSprite.material.opacity += 0.06; // Tốc độ fade-in mượt mà, vừa phải
+        textSprite.material.opacity += 0.06;
       }
 
-      // 3. Tính toán Hit-test mặt phẳng
       if (frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
@@ -471,7 +651,22 @@ export default function App() {
 
             if (greetingDoneRef.current && !planeFoundPlayedRef.current) {
               planeFoundPlayedRef.current = true;
-              playVoiceIfIdle(audioNhanDien); 
+              playVoiceIfIdle("Đã nhận diện mặt phẳng thành công", hasPlayedNhanDienRef).then(() => {
+                if (!hasPlacedObjectRef.current && !hasPlayedVongTronXanhRef.current) {
+                  hasPlayedVongTronXanhRef.current = true;
+                  speakText("Chạm vào vòng tròn xanh để đặt sản phẩm");
+                  updateInstructionText("🟢 Chạm vào vòng tròn xanh để đặt vật phẩm");
+                  
+                  // Loop nhắc nhở nếu chưa đặt sản phẩm
+                  if (!hasPlacedObjectRef.current) {
+                    loopTimeoutRef.current = setTimeout(() => {
+                      if (!hasPlacedObjectRef.current) {
+                        updateInstructionText("🟢 Chạm vào vòng tròn xanh để đặt vật phẩm");
+                      }
+                    }, 30000);
+                  }
+                }
+              });
             }
           } else {
             reticle.visible = false;
@@ -489,7 +684,14 @@ export default function App() {
       }
     }
 
+    init();
+    animate();
+
+    const removeTapListener = setupTapToActivate();
+
     return () => {
+      removeTapListener();
+      stopSpeaking();
       window.removeEventListener("resize", onResize);
       const existingARButton = document.getElementById("ARButton");
       if (existingARButton) existingARButton.remove();
@@ -506,42 +708,13 @@ export default function App() {
         renderer.setAnimationLoop(null);
         renderer.dispose();
       }
-      if (mountRef.current && renderer?.domElement) {
-        mountRef.current.removeChild(renderer.domElement);
+      if (mountNode && renderer?.domElement) {
+        mountNode.removeChild(renderer.domElement);
       }
     };
   }, []);
 
   return (
-    <>
-      <div ref={mountRef} style={{ width: "100vw", height: "100vh" }} />
-
-      <div
-        ref={overlayRef}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          pointerEvents: "auto", 
-          touchAction: "none"
-        }}
-      >
-        <img
-          src="/frog/frog_default.gif"
-          alt="Trợ lý ếch"
-          style={{
-            position: "absolute",
-            bottom: "20px",
-            right: "20px",
-            width: "60px",
-            height: "auto",
-            zIndex: 1000,
-            pointerEvents: "none",
-          }}
-        />
-      </div>
-    </>
+    <div ref={mountRef} style={{ width: "100vw", height: "100vh" }} />
   );
 }
