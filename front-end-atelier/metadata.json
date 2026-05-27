@@ -1,0 +1,6 @@
+{
+  "name": "Atelier",
+  "description": "A premium architectural furniture marketplace featuring curated designer collections, interactive 360 viewer, immersive bento spec grids, user authentication, checkout pipeline, and a comprehensive seller studio.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
