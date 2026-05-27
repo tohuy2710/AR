@@ -2,6 +2,73 @@ import { Product, Review, Order } from './types';
 
 export const INITIAL_PRODUCTS: Product[] = [
   {
+  id: 'modern-3d-lounge-chair',
+
+  name: 'Nordic Leather Lounge Chair',
+
+  shortDescription:
+    'Premium leather lounge chair with immersive interactive 3D preview.',
+
+  description:
+    'The Nordic Leather Lounge Chair combines Scandinavian minimalism with luxurious comfort. Crafted with a curved walnut wood shell, premium brown leather cushioning, and a polished aluminum swivel base, this chair is designed for modern living rooms, reading corners, and executive interiors.',
+
+  price: 1850,
+
+  rating: 4.9,
+
+  reviewCount: 28,
+
+  category: 'living-room',
+
+  materials: [
+    'Premium Brown Leather',
+    'Bent Walnut Wood Shell',
+    'Polished Aluminum Swivel Base',
+    'High Density Foam Cushion'
+  ],
+
+  colors: [
+    { name: 'Vintage Brown Leather', hex: '#6B3E26' },
+    { name: 'Walnut Wood', hex: '#8B5A3C' },
+    { name: 'Matte Black Base', hex: '#2B2B2B' }
+  ],
+
+  images: [
+    '/images/lounge-chair.png'
+  ],
+
+  threeSixtyImages: [],
+
+  model3DUrl: '/models/chair.glb',
+
+  details: {
+    material:
+      'Premium genuine leather upholstery with curved walnut veneer shell and aluminum swivel base',
+
+    dimensions:
+      'W 78cm x D 82cm x H 98cm',
+
+    careInstructions:
+      'Clean with a soft microfiber cloth. Avoid direct sunlight and harsh chemicals. Apply leather conditioner periodically.',
+
+    origin:
+      'Scandinavian Inspired Design',
+
+    weightLimit:
+      '140 kg',
+
+    designer:
+      'Nord Atelier Studio',
+
+    woodGrade:
+      'American Walnut Grade A'
+  },
+
+  sellerId: 'studio-modern',
+
+  isFeatured: true
+},
+  {
     id: 'nordic-oak-table',
     name: 'Nordic Oak Dining Table',
     shortDescription: 'Minimalist masterwork sculptured from a single source of FSC-certified European Oak.',

@@ -27,6 +27,13 @@ interface AppContextProps {
 
 const AppContext = createContext<AppContextProps | undefined>(undefined);
 
+function mergeInitialProducts(savedProducts: Product[]) {
+  const migratedProducts = savedProducts.filter(product => product.id !== 'modern-3d-chair');
+  const savedIds = new Set(migratedProducts.map(product => product.id));
+  const missingInitialProducts = INITIAL_PRODUCTS.filter(product => !savedIds.has(product.id));
+  return [...missingInitialProducts, ...migratedProducts];
+}
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   // Load and sync state from localStorage
   const [user, setUser] = useState<User | null>(() => {
@@ -36,7 +43,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('atelier_products');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+    return saved ? mergeInitialProducts(JSON.parse(saved)) : INITIAL_PRODUCTS;
   });
 
   const [orders, setOrders] = useState<Order[]>(() => {

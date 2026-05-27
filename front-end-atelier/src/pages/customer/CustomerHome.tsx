@@ -27,7 +27,7 @@ export default function CustomerHome() {
 
   const categories = [
     { id: 'living-room', label: 'Living Room', icon: '🛋️', count: products.filter(p => p.category === 'living-room').length },
-    { id: 'dining', label: 'Dining & Kitchen', icon: '🍽️', count: products.filter(p => p.category === 'dining').length },
+    { id: 'dining', label: 'Dining & Kitchen', icon: '🍽️', count: products.filter(p => p.category === 'dining' || p.category === 'dining-room').length },
     { id: 'bedroom', label: 'Bedroom Cozy', icon: '🛏️', count: products.filter(p => p.category === 'bedroom').length },
     { id: 'office', label: 'Workspace', icon: '💻', count: products.filter(p => p.category === 'office').length },
     { id: 'lighting', label: 'Lighting Art', icon: '💡', count: products.filter(p => p.category === 'lighting').length },

@@ -26,7 +26,7 @@ export default function SellerAnalytics() {
   // Sells by category
   const categoriesCount = {
     'living-room': products.filter(p => p.category === 'living-room').length,
-    'dining': products.filter(p => p.category === 'dining').length,
+    'dining': products.filter(p => p.category === 'dining' || p.category === 'dining-room').length,
     'bedroom': products.filter(p => p.category === 'bedroom').length,
     'office': products.filter(p => p.category === 'office').length,
     'lighting': products.filter(p => p.category === 'lighting').length,
