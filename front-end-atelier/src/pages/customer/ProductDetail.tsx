@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import Viewer3D from '../../components/Viewer3D';
+import Product3DViewer from '../../components/customer/Product3DViewer';
 import BentoSpecs from '../../components/BentoSpecs';
 import { 
   Heart, Star, ArrowLeft, Plus, Minus, ShoppingBag, 
@@ -79,11 +80,19 @@ export default function ProductDetail() {
           
           {/* Left Block: 3D rotational perspective container */}
           <div className="space-y-6">
-            <Viewer3D 
-              images={product.images}
-              threeSixtyImages={product.threeSixtyImages}
-              productName={product.name}
-            />
+            {product.model3DUrl ? (
+              <Product3DViewer
+                modelUrl={product.model3DUrl}
+                productName={product.name}
+                posterUrl={product.images?.[0]}
+              />
+            ) : (
+              <Viewer3D
+                images={product.images}
+                threeSixtyImages={product.threeSixtyImages}
+                productName={product.name}
+              />
+            )}
 
             {/* Immersive AR Button */}
             <div className="p-6 bg-stone-950 text-white rounded-3xl space-y-4">

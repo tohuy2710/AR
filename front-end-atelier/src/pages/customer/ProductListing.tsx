@@ -40,7 +40,10 @@ export default function ProductListing() {
                           p.materials.some(m => m.toLowerCase().includes(searchQuery.toLowerCase()));
 
       // Category
-      const matchCategory = selectedCategory === 'all' || p.category === selectedCategory;
+      const matchCategory =
+        selectedCategory === 'all' ||
+        p.category === selectedCategory ||
+        (selectedCategory === 'dining' && p.category === 'dining-room');
 
       // Price limit
       const matchPrice = p.price <= maxPrice;

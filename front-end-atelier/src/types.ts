@@ -6,11 +6,12 @@ export interface Product {
   price: number;
   rating: number;
   reviewCount: number;
-  category: 'living-room' | 'dining' | 'bedroom' | 'office' | 'lighting';
+  category: 'living-room' | 'dining' | 'dining-room' | 'bedroom' | 'office' | 'lighting';
   materials: string[];
   colors: { name: string; hex: string; previewUrl?: string }[];
   images: string[];
   threeSixtyImages: string[]; // Mocking 360-degree frames
+  model3DUrl?: string | null;
   details: {
     material: string;
     dimensions: string;
