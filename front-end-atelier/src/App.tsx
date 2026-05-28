@@ -29,11 +29,11 @@ import AddEditProduct from './pages/seller/AddEditProduct';
 import SellerOrders from './pages/seller/SellerOrders';
 import SellerInventory from './pages/seller/SellerInventory';
 import SellerAnalytics from './pages/seller/SellerAnalytics';
-import SellerProfile from './pages/seller/SellerProfile';
+// import SellerProfile from './pages/seller/SellerProfile';
 
 // Sidebar Icons for professional dashboard
 import { 
-  LayoutDashboard, Sofa, Box, History, Settings, Award, Layers, LogOut, ChevronRight
+  LayoutDashboard, Sofa, Box, History, Award, Layers, LogOut, ChevronRight
 } from 'lucide-react';
 
 // 1. Customer Layout (includes global header & footer)
@@ -59,28 +59,46 @@ function SellerLayout() {
     navigate('/');
   };
 
+  const sellerNavLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `flex shrink-0 items-center gap-2.5 lg:gap-3.5 px-3.5 py-2.5 rounded-xl text-[10px] lg:text-xs font-mono uppercase tracking-wider transition-all border whitespace-nowrap ${
+      isActive 
+        ? 'bg-white/10 border-white/10 text-white font-bold' 
+        : 'text-stone-400 border-transparent hover:text-white hover:bg-white/5'
+    }`;
+
   return (
-    <div className="min-h-screen bg-stone-50 flex selection:bg-amber-100 selection:text-amber-900 text-stone-900 overflow-x-hidden antialiased">
+    <div className="min-h-screen bg-stone-50 flex flex-col lg:flex-row selection:bg-amber-100 selection:text-amber-900 text-stone-900 overflow-x-hidden antialiased">
       
       {/* Dynamic persistent left navigation sidebar */}
-      <aside className="w-64 bg-stone-950 text-white shrink-0 min-h-screen flex flex-col justify-between border-r border-stone-900 p-6 font-sans relative">
+      <aside className="w-full lg:w-64 bg-stone-950 text-white shrink-0 lg:min-h-screen flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-stone-900 p-4 sm:p-5 lg:p-6 font-sans sticky top-0 z-30 lg:relative">
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#ffffff01_1px,transparent_1px)] bg-[size:100%_40px] pointer-events-none" />
         
-        <div className="space-y-8 relative z-10 text-left">
+        <div className="space-y-4 lg:space-y-8 relative z-10 text-left min-w-0">
           
           {/* Logo return Link context */}
-          <Link to="/" className="flex items-center gap-2.5 cursor-pointer pb-6 border-b border-stone-850">
+          <div className="flex items-center justify-between gap-3">
+          <Link to="/" className="flex items-center gap-2.5 cursor-pointer lg:pb-6 lg:border-b border-stone-850 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-[#c2ab77] text-white flex items-center justify-center">
               <Sofa className="w-4.5 h-4.5 text-stone-950 stroke-[1.8]" />
             </div>
-            <div>
+            <div className="min-w-0">
               <span className="font-display font-medium text-lg tracking-widest text-white leading-none block">ATELIER</span>
               <span className="text-[7px] tracking-[0.25em] uppercase text-[#c2ab77] font-mono leading-none mt-1.5 block">Studio Workspace</span>
             </div>
           </Link>
 
+          <button
+            onClick={handleSidebarLogout}
+            className="lg:hidden w-9 h-9 bg-rose-950 hover:bg-rose-900 border border-rose-900/50 text-white rounded-lg transition-all flex items-center justify-center cursor-pointer shrink-0"
+            aria-label="Sign out workspace"
+            title="Sign out workspace"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+          </div>
+
           {/* Quick profile metadata bubble */}
-          <div className="bg-stone-900/50 border border-stone-850 rounded-xl p-3.5 flex items-center gap-3">
+          <div className="bg-stone-900/50 border border-stone-850 rounded-xl p-3 flex items-center gap-3 lg:p-3.5">
             <div className="w-8 h-8 rounded-lg bg-[#c2ab77] text-stone-950 font-bold font-mono text-xs flex items-center justify-center shrink-0">
               {user?.name.charAt(0).toUpperCase()}
             </div>
@@ -91,99 +109,46 @@ function SellerLayout() {
           </div>
 
           {/* Sidebar Navigation Options */}
-          <nav className="space-y-1.5">
-            <span className="text-[9.5px] font-mono tracking-widest uppercase text-stone-500 font-bold block mb-3.5 pl-1.5">Studio Operations</span>
+          <nav className="space-y-2 lg:space-y-1.5">
+            <span className="hidden lg:block text-[9.5px] font-mono tracking-widest uppercase text-stone-500 font-bold mb-3.5 pl-1.5">Studio Operations</span>
             
-            <NavLink
-              to="/seller"
-              end
-              className={({ isActive }) => 
-                `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider transition-all border ${
-                  isActive 
-                    ? 'bg-white/10 border-white/10 text-white font-bold' 
-                    : 'text-stone-400 border-transparent hover:text-white hover:bg-white/5'
-                }`
-              }
-            >
-              <LayoutDashboard className="w-4 h-4 text-[#c2ab77]" />
-              <span>Workspace Hub</span>
-            </NavLink>
+            <div className="flex lg:flex-col gap-2 lg:gap-1.5 overflow-x-auto pb-1 lg:overflow-visible lg:pb-0 -mx-1 px-1">
+              <NavLink to="/seller" end className={sellerNavLinkClass}>
+                <LayoutDashboard className="w-4 h-4 text-[#c2ab77] shrink-0" />
+                <span>Workspace Hub</span>
+              </NavLink>
 
-            <NavLink
-              to="/seller/products"
-              className={({ isActive }) => 
-                `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider transition-all border ${
-                  isActive 
-                    ? 'bg-white/10 border-white/10 text-white font-bold' 
-                    : 'text-stone-400 border-transparent hover:text-white hover:bg-white/5'
-                }`
-              }
-            >
-              <Box className="w-4 h-4 text-[#c2ab77]" />
-              <span>Catalog Registry</span>
-            </NavLink>
+              <NavLink to="/seller/products" className={sellerNavLinkClass}>
+                <Box className="w-4 h-4 text-[#c2ab77] shrink-0" />
+                <span>Catalog Registry</span>
+              </NavLink>
 
-            <NavLink
-              to="/seller/orders"
-              className={({ isActive }) => 
-                `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider transition-all border ${
-                  isActive 
-                    ? 'bg-white/10 border-white/10 text-white font-bold' 
-                    : 'text-stone-400 border-transparent hover:text-white hover:bg-white/5'
-                }`
-              }
-            >
-              <History className="w-4 h-4 text-[#c2ab77]" />
-              <span>Client Orders</span>
-            </NavLink>
+              <NavLink to="/seller/orders" className={sellerNavLinkClass}>
+                <History className="w-4 h-4 text-[#c2ab77] shrink-0" />
+                <span>Client Orders</span>
+              </NavLink>
 
-            <NavLink
-              to="/seller/inventory"
-              className={({ isActive }) => 
-                `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider transition-all border ${
-                  isActive 
-                    ? 'bg-white/10 border-white/10 text-white font-bold' 
-                    : 'text-stone-400 border-transparent hover:text-white hover:bg-white/5'
-                }`
-              }
-            >
-              <Layers className="w-4 h-4 text-[#c2ab77]" />
-              <span>Moisture Levels</span>
-            </NavLink>
+              <NavLink to="/seller/inventory" className={sellerNavLinkClass}>
+                <Layers className="w-4 h-4 text-[#c2ab77] shrink-0" />
+                <span>Moisture Levels</span>
+              </NavLink>
 
-            <NavLink
-              to="/seller/analytics"
-              className={({ isActive }) => 
-                `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider transition-all border ${
-                  isActive 
-                    ? 'bg-white/10 border-white/10 text-white font-bold' 
-                    : 'text-stone-400 border-transparent hover:text-white hover:bg-white/5'
-                }`
-              }
-            >
-              <Award className="w-4 h-4 text-[#c2ab77]" />
-              <span>Sales Ledger</span>
-            </NavLink>
+              <NavLink to="/seller/analytics" className={sellerNavLinkClass}>
+                <Award className="w-4 h-4 text-[#c2ab77] shrink-0" />
+                <span>Sales Ledger</span>
+              </NavLink>
 
-            <NavLink
-              to="/seller/profile"
-              className={({ isActive }) => 
-                `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider transition-all border ${
-                  isActive 
-                    ? 'bg-white/10 border-white/10 text-white font-bold' 
-                    : 'text-stone-400 border-transparent hover:text-white hover:bg-white/5'
-                }`
-              }
-            >
-              <Settings className="w-4 h-4 text-[#c2ab77]" />
-              <span>Studio Profile</span>
-            </NavLink>
+              {/* <NavLink to="/seller/profile" className={sellerNavLinkClass}>
+                <Settings className="w-4 h-4 text-[#c2ab77] shrink-0" />
+                <span>Studio Profile</span>
+              </NavLink> */}
+            </div>
 
           </nav>
         </div>
 
         {/* Bottom signout keys */}
-        <div className="space-y-4 pt-6 mt-12 border-t border-stone-850 relative z-10">
+        <div className="hidden lg:block space-y-4 pt-6 mt-12 border-t border-stone-850 relative z-10">
           <Link
             to="/"
             className="w-full py-2 border border-stone-800 hover:border-stone-700 text-stone-400 hover:text-white text-[10px] font-mono uppercase font-bold text-center rounded-lg transition-all flex items-center justify-center gap-1.5"
@@ -204,7 +169,7 @@ function SellerLayout() {
       </aside>
 
       {/* Main active panels context right content scroll area */}
-      <main className="flex-1 min-h-screen overflow-y-auto bg-stone-50 p-8 sm:p-12 relative">
+      <main className="flex-1 min-h-screen overflow-y-auto bg-stone-50 p-4 sm:p-6 lg:p-12 relative min-w-0">
         <Outlet />
       </main>
 
@@ -279,7 +244,7 @@ export default function App() {
             <Route path="orders" element={<SellerOrders />} />
             <Route path="inventory" element={<SellerInventory />} />
             <Route path="analytics" element={<SellerAnalytics />} />
-            <Route path="profile" element={<SellerProfile />} />
+            {/* <Route path="profile" element={<SellerProfile />} /> */}
           </Route>
 
           {/* Simple Authentication portals outside global layout */}
