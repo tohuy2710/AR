@@ -1,23 +1,39 @@
-import React from 'react';
-import { useApp } from '../../context/AppContext';
-import { Sofa, ShieldCheck, Mail, Landmark, Compass, Package, ChevronRight, Clock } from 'lucide-react';
+import React from "react";
+import { useApp } from "../../context/AppContext";
+import {
+  Sofa,
+  ShieldCheck,
+  Mail,
+  Landmark,
+  Compass,
+  Package,
+  ChevronRight,
+  Clock,
+} from "lucide-react";
 
 export default function SellerOrders() {
   const { orders, updateOrderStatus } = useApp();
 
-  const handleUpdateStatus = (id: string, nextStatus: 'pending' | 'shipped' | 'delivered') => {
+  const handleUpdateStatus = (
+    id: string,
+    nextStatus: "pending" | "shipped" | "delivered",
+  ) => {
     updateOrderStatus(id, nextStatus);
-    alert(`Success! Tracking status updated to [${nextStatus.toUpperCase()}] for Order ${id}`);
+    alert(
+      `Success! Tracking status updated to [${nextStatus.toUpperCase()}] for Order ${id}`,
+    );
   };
 
   return (
-    <div className="font-sans text-stone-900 text-left space-y-8">
-      
+    <div className="font-sans text-stone-900 text-left space-y-6 sm:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-display font-light text-stone-950 tracking-tight">Showroom Order Operations</h1>
+        <h1 className="text-xl sm:text-2xl font-display font-light text-stone-950 tracking-tight">
+          Showroom Order Operations
+        </h1>
         <p className="text-xs text-stone-400 mt-1">
-          Review buyer payment SWIFTs, coordinate shipping priorities, or flag packages as shipped.
+          Review buyer payment SWIFTs, coordinate shipping priorities, or flag
+          packages as shipped.
         </p>
       </div>
 
@@ -29,73 +45,102 @@ export default function SellerOrders() {
           </div>
         ) : (
           orders.map((ord) => (
-            <div 
+            <div
               key={ord.id}
-              className="bg-white border border-stone-200 rounded-3xl overflow-hidden shadow-xs hover:border-stone-300 transition-all text-xs"
+              className="bg-white border border-stone-200 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xs hover:border-stone-300 transition-all text-xs"
             >
               {/* Header info bar */}
               <div className="bg-stone-50 border-b border-stone-150 p-5 sm:p-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4 font-mono">
-                <div className="flex flex-wrap gap-5">
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-4 sm:gap-5 min-w-0">
+                  <div className="min-w-0">
                     <span className="text-stone-400">ORDER COMMISSION</span>
-                    <p className="font-bold text-stone-950 text-sm mt-0.5">{ord.id}</p>
+                    <p className="font-bold text-stone-950 text-sm mt-0.5 break-all">
+                      {ord.id}
+                    </p>
                   </div>
-                  <div className="border-l border-stone-200 pl-5">
+                  <div className="sm:border-l border-stone-200 sm:pl-5 min-w-0">
                     <span className="text-stone-400">CLIENT</span>
-                    <p className="font-bold text-stone-950 mt-0.5">{ord.buyerName}</p>
+                    <p className="font-bold text-stone-950 mt-0.5 break-words">
+                      {ord.buyerName}
+                    </p>
                   </div>
-                  <div className="border-l border-stone-200 pl-5 text-left">
+                  <div className="sm:border-l border-stone-200 sm:pl-5 text-left min-w-0">
                     <span className="text-stone-400">AUTHORIZED ON</span>
-                    <p className="font-bold text-stone-950 mt-0.5">{new Date(ord.createdAt).toLocaleDateString()}</p>
+                    <p className="font-bold text-stone-950 mt-0.5">
+                      {new Date(ord.createdAt).toLocaleDateString()}
+                    </p>
                   </div>
                 </div>
 
-                <div className="flex gap-2 text-[10px] items-center">
+                <div className="flex gap-2 text-[10px] items-center shrink-0">
                   <span className="text-stone-400">STATUS:</span>
-                  <span className={`px-2.5 py-1 rounded-full font-bold uppercase ${
-                    ord.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border border-emerald-250/50' :
-                    ord.status === 'shipped' ? 'bg-blue-50 text-blue-700 border border-blue-250/50' :
-                    'bg-amber-50 text-amber-700 border border-amber-250/50'
-                  }`}>
+                  <span
+                    className={`px-2.5 py-1 rounded-full font-bold uppercase ${
+                      ord.status === "delivered"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-250/50"
+                        : ord.status === "shipped"
+                          ? "bg-blue-50 text-blue-700 border border-blue-250/50"
+                          : "bg-amber-50 text-amber-700 border border-amber-250/50"
+                    }`}
+                  >
                     {ord.status}
                   </span>
                 </div>
               </div>
 
               {/* Items grid info */}
-              <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                
+              <div className="p-5 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Columns 1 & 2: Products and delivery */}
                 <div className="md:col-span-2 space-y-4">
-                  <h4 className="text-[10px] font-mono text-[#B39D69] uppercase font-bold tracking-wider">Item Configurations</h4>
-                  
+                  <h4 className="text-[10px] font-mono text-[#B39D69] uppercase font-bold tracking-wider">
+                    Item Configurations
+                  </h4>
+
                   <div className="space-y-3">
                     {ord.items.map((item, idx) => (
-                      <div key={idx} className="flex gap-4 items-center">
+                      <div
+                        key={idx}
+                        className="flex gap-4 items-center min-w-0"
+                      >
                         <div className="w-12 h-12 bg-stone-50 border rounded-xl p-1 flex items-center justify-center shrink-0">
-                          <img src={item.image} alt="" className="max-h-full max-w-full object-contain" />
+                          <img
+                            src={item.image}
+                            alt=""
+                            className="max-h-full max-w-full object-contain"
+                          />
                         </div>
                         <div className="text-left min-w-0">
-                          <p className="font-display font-medium text-stone-950 truncate max-w-[200px]">{item.productName}</p>
-                          <p className="text-[10px] text-stone-400 font-mono">Shade: {item.selectedColor} • Quantity: {item.quantity}x</p>
+                          <p className="font-display font-medium text-stone-950 truncate max-w-[220px] sm:max-w-[320px] md:max-w-[200px]">
+                            {item.productName}
+                          </p>
+                          <p className="text-[10px] text-stone-400 font-mono break-words">
+                            Shade: {item.selectedColor} • Quantity:{" "}
+                            {item.quantity}x
+                          </p>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="pt-4 border-t border-stone-100 flex flex-wrap gap-5 text-stone-500 font-sans">
-                    <div>
-                      <span className="font-mono text-[9px] text-stone-400 uppercase font-bold">Client Email:</span>
-                      <p className="text-stone-800 text-xs mt-0.5 flex items-center gap-1">
+                  <div className="pt-4 border-t border-stone-100 grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 text-stone-500 font-sans">
+                    <div className="min-w-0">
+                      <span className="font-mono text-[9px] text-stone-400 uppercase font-bold">
+                        Client Email:
+                      </span>
+                      <p className="text-stone-800 text-xs mt-0.5 flex items-center gap-1 min-w-0">
                         <Mail className="w-3.5 h-3.5 text-stone-400" />
-                        {ord.buyerEmail}
+                        <span className="truncate">{ord.buyerEmail}</span>
                       </p>
                     </div>
 
-                    <div className="border-l border-stone-200 pl-5">
-                      <span className="font-mono text-[9px] text-stone-400 uppercase font-bold">Delivery Location:</span>
-                      <p className="text-stone-800 text-xs mt-0.5">
-                        {ord.deliveryAddress.street}, {ord.deliveryAddress.city}, {ord.deliveryAddress.postalCode}, {ord.deliveryAddress.country}
+                    <div className="sm:border-l border-stone-200 sm:pl-5 min-w-0">
+                      <span className="font-mono text-[9px] text-stone-400 uppercase font-bold">
+                        Delivery Location:
+                      </span>
+                      <p className="text-stone-800 text-xs mt-0.5 break-words">
+                        {ord.deliveryAddress.street}, {ord.deliveryAddress.city}
+                        , {ord.deliveryAddress.postalCode},{" "}
+                        {ord.deliveryAddress.country}
                       </p>
                     </div>
                   </div>
@@ -104,9 +149,12 @@ export default function SellerOrders() {
                 {/* Column 3: Status controls & Action Buttons */}
                 <div className="md:col-span-1 bg-stone-50/50 border border-stone-150 p-5 rounded-2xl flex flex-col justify-between space-y-4">
                   <div className="space-y-2 text-left">
-                    <span className="text-[10px] font-mono text-stone-400 uppercase">Dispatch Actions</span>
+                    <span className="text-[10px] font-mono text-stone-400 uppercase">
+                      Dispatch Actions
+                    </span>
                     <p className="text-stone-600 font-light text-[11px] leading-relaxed">
-                      Toggle shipping states. Flagging orders sends tracking codes into the client's historical billing account.
+                      Toggle shipping states. Flagging orders sends tracking
+                      codes into the client's historical billing account.
                     </p>
                     <div className="font-mono font-bold text-stone-950 text-sm">
                       Total: ${ord.totalAmount.toLocaleString()}
@@ -115,32 +163,32 @@ export default function SellerOrders() {
 
                   {/* Actions selections */}
                   <div className="space-y-2">
-                    {ord.status === 'pending' && (
+                    {ord.status === "pending" && (
                       <button
-                        onClick={() => handleUpdateStatus(ord.id, 'shipped')}
+                        onClick={() => handleUpdateStatus(ord.id, "shipped")}
                         className="w-full py-2 bg-stone-950 hover:bg-stone-900 text-white font-mono text-[9px] font-bold uppercase tracking-wider rounded-lg transition-all"
                       >
                         Set as Shipped
                       </button>
                     )}
 
-                    {ord.status === 'shipped' && (
+                    {ord.status === "shipped" && (
                       <button
-                        onClick={() => handleUpdateStatus(ord.id, 'delivered')}
+                        onClick={() => handleUpdateStatus(ord.id, "delivered")}
                         className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-mono text-[9px] font-bold uppercase tracking-wider rounded-lg transition-all"
                       >
                         Set as Delivered
                       </button>
                     )}
 
-                    {ord.status === 'delivered' && (
+                    {ord.status === "delivered" && (
                       <div className="text-center p-2 bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-mono font-bold flex items-center justify-center gap-1">
                         <ShieldCheck className="w-4 h-4 text-emerald-600" />
                         <span>DELIVERED & CLOSED</span>
                       </div>
                     )}
 
-                    {ord.status !== 'delivered' && (
+                    {/* {ord.status !== 'delivered' && (
                       <button
                         onClick={() => {
                           const statusList: ('pending' | 'shipped' | 'delivered')[] = ['pending', 'shipped', 'delivered'];
@@ -152,17 +200,14 @@ export default function SellerOrders() {
                       >
                         Fast Forward Status
                       </button>
-                    )}
+                    )} */}
                   </div>
                 </div>
-
               </div>
-
             </div>
           ))
         )}
       </div>
-
     </div>
   );
 }

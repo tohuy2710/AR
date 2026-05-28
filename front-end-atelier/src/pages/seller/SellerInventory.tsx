@@ -25,23 +25,87 @@ export default function SellerInventory() {
   };
 
   return (
-    <div className="font-sans text-stone-900 text-left space-y-8">
+    <div className="font-sans text-stone-900 text-left space-y-6 sm:space-y-8">
       
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-display font-light text-stone-950 tracking-tight">Stock & Commission Leveling</h1>
+        <h1 className="text-xl sm:text-2xl font-display font-light text-stone-950 tracking-tight">Stock & Commission Leveling</h1>
         <p className="text-xs text-stone-400 mt-1">
           Edit pricing values or increment material stock quantities. Updates synchronize immediately.
         </p>
       </div>
 
-      <div className="bg-white border border-stone-200 rounded-3xl overflow-hidden shadow-xs">
+      <div className="bg-white border border-stone-200 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xs">
         {products.length === 0 ? (
           <div className="text-center py-20 text-stone-400 font-mono text-xs">
             No listings present to adjust.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="md:hidden divide-y divide-stone-100">
+            {products.map(p => (
+              <article key={p.id} className="p-4 space-y-4">
+                <div className="flex gap-3">
+                  <div className="w-14 h-14 bg-stone-50 border rounded-xl p-1 flex items-center justify-center shrink-0">
+                    <img src={p.images[0]} alt="" className="max-h-full max-w-full object-contain" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-stone-950 font-semibold leading-tight break-words">{p.name}</p>
+                    <p className="text-[10px] text-stone-450 font-mono font-normal uppercase mt-1">ID: {p.id}</p>
+                    <span className="inline-flex mt-2 bg-stone-100/90 text-stone-700 border border-stone-200/50 px-2.5 py-1 rounded font-mono text-[9px] uppercase">
+                      {p.category}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
+                  <label className="rounded-xl bg-stone-50 border border-stone-100 p-3">
+                    <span className="block text-[9px] font-mono uppercase font-bold text-stone-400 mb-2">
+                      Commission Price
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-stone-400 font-semibold">$</span>
+                      <input
+                        type="number"
+                        value={p.price}
+                        onChange={(e) => handleUpdatePrice(p.id, Number(e.target.value))}
+                        className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg font-mono text-stone-900 font-semibold text-xs focus:outline-none focus:border-stone-400"
+                      />
+                    </div>
+                  </label>
+
+                  <div className="rounded-xl bg-stone-50 border border-stone-100 p-3">
+                    <p className="text-[9px] font-mono uppercase font-bold text-stone-400 mb-2">
+                      Simulated Stock Units
+                    </p>
+                    <div className="flex items-center justify-between gap-3">
+                      <button
+                        onClick={() => handleUpdateMockStock(p.id, 'dec')}
+                        className="w-10 h-10 bg-white hover:bg-stone-100 border border-stone-200 rounded-lg flex items-center justify-center text-stone-600 font-bold"
+                      >
+                        -
+                      </button>
+                      <span className="text-center font-mono text-sm font-semibold text-stone-900">
+                        {p.reviewCount} units
+                      </span>
+                      <button
+                        onClick={() => handleUpdateMockStock(p.id, 'inc')}
+                        className="w-10 h-10 bg-white hover:bg-stone-100 border border-stone-200 rounded-lg flex items-center justify-center text-stone-600 font-bold"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <span className="text-center text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-150 px-2.5 py-2 rounded-lg uppercase font-bold font-mono">
+                    VERIFIED GRADE
+                  </span>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-xs text-left text-stone-500 font-sans min-w-[650px]">
               <thead className="text-[10px] font-mono uppercase text-stone-400 bg-stone-50 border-b border-stone-150">
                 <tr>
@@ -119,6 +183,7 @@ export default function SellerInventory() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
